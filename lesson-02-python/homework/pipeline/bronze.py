@@ -45,5 +45,5 @@ def build_bronze() -> pl.DataFrame:
         "commit_count"
     ])
     print(lf.shape)
-    lf.write_parquet("data/bronze/events.parquet")
+    lf.write_parquet(config.BRONZE_FILE)
     return lf
