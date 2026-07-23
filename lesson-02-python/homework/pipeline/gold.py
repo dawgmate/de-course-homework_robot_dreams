@@ -20,8 +20,8 @@ from . import config
 def build_repo_activity(silver: pl.DataFrame) -> pl.DataFrame:
     repo_activity = silver.group_by("repo_name").agg([
         pl.count("event_id").cast(pl.Int64).alias("event_count"),
-        pl.n_unique("event_type").cast(pl.Int64).alias("unique_event_types")
-    ])
+        pl.n_unique("event_type").cast(pl.Int64).alias("distinct_event_types")
+    ]).sort("event_count", descending=True)
     return repo_activity.write_parquet(config.GOLD_REPO_ACTIVITY)
     
 
@@ -37,8 +37,8 @@ def build_activity_per_minute(silver: pl.DataFrame) -> pl.DataFrame:
 
 def build_push_commits_by_repo(silver: pl.DataFrame) -> pl.DataFrame:
     commits_by_repo = silver.filter(pl.col("event_type") == "PushEvent").group_by("repo_name").agg([
-        pl.count("event_id").cast(pl.Int64).alias("push_count"),
-        pl.sum("commit_count").cast(pl.Int64).alias("total_commit_count")
+        pl.count("event_id").cast(pl.Int64).alias("push_events"),
+        pl.sum("commit_count").cast(pl.Int64).alias("total_commits")
     ])
     return commits_by_repo.write_parquet(config.GOLD_PUSH_COMMITS)
     
