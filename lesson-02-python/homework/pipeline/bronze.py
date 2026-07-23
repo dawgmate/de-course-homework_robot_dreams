@@ -20,4 +20,30 @@ from . import config
 
 
 def build_bronze() -> pl.DataFrame:
-    raise NotImplementedError("Завдання 1: реалізуйте bronze згідно з CONTRACTS.md")
+    lf = pl.scan_ndjson(config.LANDING_FILE, schema=config.LANDING_SCHEMA)
+    lf = lf.with_columns(
+        actor_id = pl.col("actor").struct.field("id").cast(pl.Int64).alias("actor_id"),
+        actor_login = pl.col("actor").struct.field("login").alias("actor_login"),
+        repo_id = pl.col("repo").struct.field("id").cast(pl.Int64).alias("repo_id"),
+        repo_name = pl.col("repo").struct.field("name").alias("repo_name"),
+        commit_count = pl.col("payload").struct.field("commits").list.len().fill_null(0).cast(pl.Int64).alias("commit_count"),
+        action = pl.col("payload").struct.field("action").alias("action"),
+        created_at = pl.col("created_at").str.to_datetime("%Y-%m-%dT%H:%M:%SZ", time_zone="UTC").alias("created_at"),
+    ).collect()
+    lf = lf.drop(["actor","repo","payload"])
+    lf = lf.rename({"id": "event_id", "type": "event_type"})
+    lf = lf.select([
+        "event_id",
+        "event_type",
+        "actor_id",
+        "actor_login",
+        "repo_id",
+        "repo_name",
+        "created_at",
+        "public",
+        "action",
+        "commit_count"
+    ])
+    print(lf.shape)
+    lf.write_parquet("data/bronze/events.parquet")
+    return lf
