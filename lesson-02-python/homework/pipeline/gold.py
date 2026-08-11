@@ -22,7 +22,7 @@ def build_repo_activity(silver: pl.DataFrame) -> pl.DataFrame:
         pl.count("event_id").cast(pl.Int64).alias("event_count"),
         pl.n_unique("event_type").cast(pl.Int64).alias("distinct_event_types")
     ]).sort("event_count", descending=True)
-    return repo_activity.write_parquet(config.GOLD_REPO_ACTIVITY)
+    return repo_activity.write_parquet(mkdir=True, file=config.GOLD_REPO_ACTIVITY)
     
 
 def build_activity_per_minute(silver: pl.DataFrame) -> pl.DataFrame:
@@ -31,7 +31,7 @@ def build_activity_per_minute(silver: pl.DataFrame) -> pl.DataFrame:
     ).group_by("minute").agg([
         pl.count("event_id").cast(pl.Int64).alias("event_count")
     ])
-    return activity_per_minute.write_parquet(config.GOLD_ACTIVITY_PER_MINUTE)
+    return activity_per_minute.write_parquet(mkdir=True, file=config.GOLD_ACTIVITY_PER_MINUTE)
 
 
 
@@ -40,5 +40,5 @@ def build_push_commits_by_repo(silver: pl.DataFrame) -> pl.DataFrame:
         pl.count("event_id").cast(pl.Int64).alias("push_events"),
         pl.sum("commit_count").cast(pl.Int64).alias("total_commits")
     ])
-    return commits_by_repo.write_parquet(config.GOLD_PUSH_COMMITS)
+    return commits_by_repo.write_parquet(mkdir=True, file=config.GOLD_PUSH_COMMITS)
     

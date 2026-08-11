@@ -26,10 +26,10 @@ def build_silver(bronze: pl.DataFrame) -> pl.DataFrame:
   silver = bronze.filter(pl.col("event_type").is_in(config.TARGET_EVENT_TYPES))
   silver = silver.filter(~pl.col("repo_name").is_null() & ~pl.col("event_id").is_null() & ~pl.col("created_at").is_null())
   silver = silver.unique(subset=["event_id"])
-  silver.write_parquet(config.SILVER_FILE)
+  silver.write_parquet(mkdir=True, file=config.SILVER_FILE)
   return silver
 
 
 def write_silver_partitioned(silver: pl.DataFrame) -> None:
-    silver.write_parquet(config.SILVER_PARTITIONED_DIR, partition_by="event_type")
+    silver.write_parquet(mkdir=True, file=config.SILVER_PARTITIONED_DIR, partition_by="event_type")
     
