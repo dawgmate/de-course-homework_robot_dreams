@@ -23,8 +23,13 @@ from . import config
 
 
 def build_silver(bronze: pl.DataFrame) -> pl.DataFrame:
-    raise NotImplementedError("Завдання 2: реалізуйте silver згідно з CONTRACTS.md")
+  silver = bronze.filter(pl.col("event_type").is_in(config.TARGET_EVENT_TYPES))
+  silver = silver.filter(~pl.col("repo_name").is_null() & ~pl.col("event_id").is_null() & ~pl.col("created_at").is_null())
+  silver = silver.unique(subset=["event_id"])
+  silver.write_parquet(mkdir=True, file=config.SILVER_FILE)
+  return silver
 
 
 def write_silver_partitioned(silver: pl.DataFrame) -> None:
-    raise NotImplementedError("Завдання 3: запишіть партиціонований silver за event_type")
+    silver.write_parquet(mkdir=True, file=config.SILVER_PARTITIONED_DIR, partition_by="event_type")
+    
