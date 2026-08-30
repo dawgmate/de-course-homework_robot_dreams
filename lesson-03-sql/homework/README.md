@@ -88,18 +88,7 @@ Pull request зі змістом директорії `dbt_github_hw/`:
 - 7 реалізованих моделей у `models/` (+ незмінений `report_category_week_naive.sql`);
 - лог успішного `uv run dbt build` (можна як текст у описі PR).
 
-## Оцінювання — 100 балів
-
-| # | Модель | Патерн | Балів |
-|---|---|---|---|
-| 1 | `stg_events` | DQ-чистка, schema-on-read | 12 |
-| 2 | `repo_top_events` | `ROW_NUMBER` + `QUALIFY` | 12 |
-| 3 | `daily_activity` | `SUM() OVER` running total | 12 |
-| 4 | `daily_activity_change` | `LAG()` | 12 |
-| 5 | `starred_repos_without_push` | anti-join | 12 |
-| 6 | `mart_category_daily` | multi-join + агрегація | 20 |
-| 7 | `report_category_week` | join rewrite → partition pruning | 20 |
-| | | **Разом** | **100** |
+## Оцінювання — 15 балів
 
 Бали за модель нараховуються, якщо вона збирається, проходить свої тести і збігається з
 еталоном `solution/` за результатом.

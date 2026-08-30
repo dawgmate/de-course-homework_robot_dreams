@@ -1,0 +1,10 @@
+.env
+logs/
+config/
+__pycache__/
+dbt_taxi/target/
+dbt_taxi/logs/
+
+# Parquet-джерело і taxi_dwh.duckdb генеруються demo5 — тримаємо саму теку, не вміст
+data/*
+!data/.gitkeep

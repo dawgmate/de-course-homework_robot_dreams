@@ -1,0 +1,17 @@
+# Завдання 3 і 4 — стек із двох сервісів. Специфікація: ../SPEC.md → «docker-compose».
+#
+# Потрібні два сервіси:
+#
+#   postgres  — образ postgres:16-alpine; credentials зі змінних оточення
+#               (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB); named volume під
+#               дані БД; HEALTHCHECK через pg_isready.
+#
+#   ingestor  — будується з вашого Dockerfile (build: .); підключається до Postgres
+#               ПО ІМЕНІ СЕРВІСУ (PGHOST: postgres) — це Docker-networking; стартує
+#               лише ПІСЛЯ того, як postgres став healthy (depends_on + condition:
+#               service_healthy); named volume під кеш завантаження (/cache).
+#
+# Змінні беруться з .env (скопіюйте .env.example → .env).
+# Перевірте: docker compose up --build  (ingestor завершиться, дані будуть у Postgres).
+
+# TODO: опишіть services та volumes тут.

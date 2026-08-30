@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: nyc_tlc
+    schema: main
+    description: >
+      NYC TLC Yellow Taxi Trip Records. Місячні Parquet-файли лежать локально —
+      їх завантажує Airflow-задача download_month перед запуском dbt.
+    tables:
+      - name: yellow_trips_raw
+        description: >
+          View над glob-ом місячних файлів (створюється on-run-start хуком із
+          dbt_project.yml). dbt читає з нього рівно одну добу — ту, що в `var('ds')`.

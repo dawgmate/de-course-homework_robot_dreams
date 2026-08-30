@@ -1,0 +1,25 @@
+name: "dbt_taxi"
+version: "1.0.0"
+config-version: 2
+
+profile: "dbt_taxi"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Creates a view for the remote Parquet source before any model runs.
+on-run-start:
+  - "CREATE OR REPLACE VIEW yellow_trips_raw AS SELECT * FROM read_parquet('https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet')"
+
+models:
+  dbt_taxi:
+    +materialized: view
+    # lesson 05: gold layer added here
+    gold:
+      +materialized: table

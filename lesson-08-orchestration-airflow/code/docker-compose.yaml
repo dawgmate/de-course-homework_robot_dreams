@@ -1,0 +1,77 @@
+# Демо-стек Airflow (LocalExecutor + Postgres). Образ — стоковий Airflow плюс тонкий
+# шар із Dockerfile (duckdb + dbt у власному venv) для demo5; demo1–demo4 обходяться stdlib.
+#
+# Той самий легкий стек, що в ДЗ (lesson-08/homework): LocalExecutor виконує задачі
+# в процесі scheduler-а — без Redis і окремого Celery-worker-а. Менше рухомих частин,
+# менше RAM, надійніше для live-демо; паралельний fan-out усе одно працює.
+#
+# Офіційний CeleryExecutor-compose теж існує (airflow.apache.org/docs → docker-compose.yaml),
+# але він важчий (Redis + worker + triggerer) і вимогливіший до ресурсів.
+
+x-airflow-common: &airflow-common
+  build: .
+  image: demo-airflow-dbt:2.10.5
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"   # демо: лишаємо лише наші 5 DAG-ів, без bundled-прикладів
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "10"
+    PYTHONPATH: /opt/airflow
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./plugins:/opt/airflow/plugins      # taxi.py і dbt_operator.py тут -> на sys.path
+    - ./dbt_taxi:/opt/airflow/dbt_taxi    # dbt-проєкт demo5 (копія L05 з інкрементальними моделями)
+    - ./data:/opt/airflow/data            # source/*.parquet + taxi_dwh.duckdb
+    - ./logs:/opt/airflow/logs
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - >
+        airflow db migrate &&
+        airflow users create --username airflow --password airflow
+        --firstname a --lastname a --role Admin --email a@example.com
+    restart: on-failure
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
