@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: nyc_tlc
+    schema: main
+    description: "NYC TLC Yellow Taxi Trip Records, January 2024 (remote Parquet via httpfs)"
+    tables:
+      - name: yellow_trips_raw
+        description: "Raw trip records — view created via on-run-start hook from CloudFront Parquet"

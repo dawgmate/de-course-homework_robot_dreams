@@ -73,20 +73,7 @@ uv run pytest
 
 ---
 
-## Оцінювання (110 балів)
-
-| # | Завдання | Артефакт | Балів |
-|---|---|---|---|
-| 1 | bronze | `data/bronze/events.parquet` | 15 |
-| 2 | silver | `data/silver/events.parquet` | 25 |
-| 3 | silver партиціонований | `data/silver/events_by_type/` | 15 |
-| 4 | gold repo_activity | `data/gold/repo_activity.parquet` | 15 |
-| 5 | gold activity_per_minute | `data/gold/activity_per_minute.parquet` | 15 |
-| 6 | gold push_commits_by_repo | `data/gold/push_commits_by_repo.parquet` | 15 |
-| ★ | модульний код (не спагеті) | — | +10 (бонус) |
-| | **Разом** | | **100 (+10)** |
-
-Бал за завдання нараховується, коли проходять усі його тести.
+## Оцінювання (10 балів)
 
 ---
 

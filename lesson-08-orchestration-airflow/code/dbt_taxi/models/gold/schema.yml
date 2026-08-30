@@ -1,0 +1,114 @@
+version: 2
+
+models:
+  - name: gld_fact_trip
+    description: >
+      Transaction fact — one row per taxi trip. All measures additive.
+      Every dimension is joined to resolve/conform its key, so the star is wired
+      in lineage and every FK is guaranteed to exist in its dimension.
+    columns:
+      - name: trip_sk
+        description: >
+          Surrogate key (md5 of the 6-column natural key). Тест `unique` тут працює
+          ще й як перевірка ідемпотентності: якби повторний прогін дня дописував
+          рядки замість перезапису партиції, ключі задублювались би і тест впав.
+        tests:
+          - not_null
+          - unique
+      - name: pickup_date
+        description: "Поле-партиція факту: delete+insert одного дня."
+        tests:
+          - not_null
+
+      # Role-playing dim_date (pickup + dropoff) and dim_time
+      - name: pickup_date_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_date'), field: date_key }
+              config: { severity: warn }
+      - name: dropoff_date_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_date'), field: date_key }
+              config: { severity: warn }
+      - name: pickup_time_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_time'), field: time_key }
+              config: { severity: warn }
+
+      # Role-playing dim_location (pickup + dropoff), SCD2 surrogate key
+      - name: pu_location_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_location'), field: location_key }
+              config: { severity: warn }
+      - name: do_location_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_location'), field: location_key }
+              config: { severity: warn }
+
+      # Lookup dims (unmatched folds to -1, so these should be clean)
+      - name: rate_code_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_rate_code'), field: rate_code_id }
+              config: { severity: error }
+      - name: payment_type_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_payment_type'), field: payment_type_id }
+              config: { severity: error }
+      - name: vendor_key
+        tests:
+          - relationships:
+              arguments: { to: ref('gld_dim_vendor'), field: vendor_id }
+              config: { severity: error }
+
+  - name: gld_trip_enriched
+    description: >
+      One Big Table (OBT) — the star flattened: every dimension attribute folded
+      into the fact. Denormalized alternative to the star (L05, Tier 2).
+      Incremental за `pickup_date`, як і факт.
+    columns:
+      - name: trip_sk
+        tests: [not_null, unique]
+      - name: pickup_date
+        tests: [not_null]
+
+  - name: gld_dim_location
+    description: "Taxi zones, SCD Type 2 (valid_from / valid_to / is_current)."
+    columns:
+      - name: location_key
+        tests: [not_null, unique]
+
+  - name: gld_dim_date
+    description: "Calendar dimension, 2009–2030, generated via recursive CTE."
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
+
+  - name: gld_dim_time
+    description: "Time-of-day dimension at minute grain (1440 rows)."
+    columns:
+      - name: time_key
+        tests: [not_null, unique]
+
+  - name: gld_dim_vendor
+    description: "Vendor lookup, SCD Type 1."
+    columns:
+      - name: vendor_id
+        tests: [not_null, unique]
+
+  - name: gld_dim_rate_code
+    description: "Rate code lookup, SCD Type 1."
+    columns:
+      - name: rate_code_id
+        tests: [not_null, unique]
+
+  - name: gld_dim_payment_type
+    description: "Payment type lookup, SCD Type 1."
+    columns:
+      - name: payment_type_id
+        tests: [not_null, unique]

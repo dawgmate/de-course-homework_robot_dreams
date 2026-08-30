@@ -1,0 +1,8 @@
+dbt_taxi:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: dbt_taxi.duckdb
+      extensions:
+        - httpfs

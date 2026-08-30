@@ -1,0 +1,7 @@
+.env
+data/landing/
+data/*.duckdb
+data/*.duckdb.wal
+__pycache__/
+*.pyc
+logs/

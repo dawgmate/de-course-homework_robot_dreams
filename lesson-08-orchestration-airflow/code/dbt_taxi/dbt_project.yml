@@ -1,0 +1,46 @@
+# dbt-проєкт із заняття 05 (Bronze → Silver → Gold star schema), пристосований
+# під оркестрацію Airflow-ом. Що змінилося порівняно з L05:
+#   1. джерело — не один зашитий URL, а glob по місячних файлах, які завантажує Airflow;
+#   2. brz/slr/fact/OBT стали `incremental` з партицією `pickup_date` (див. моделі);
+#   3. у кожного шару свій tag — Airflow вибирає шар через `--select tag:bronze`.
+# Побачити повний список змін: diff -ru ../../lesson-05-data-warehouse-design-1/code/models models
+
+name: "dbt_taxi"
+version: "1.0.0"
+config-version: 2
+
+profile: "dbt_taxi"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # Місячні файли TLC, які завантажив Airflow. Glob — щоб backfill за кілька місяців
+  # працював без правок конфігу.
+  source_glob: "/opt/airflow/data/source/yellow_tripdata_*.parquet"
+  # ds передає Airflow: --vars '{"ds": "2024-01-15"}'. Без нього моделі беруть увесь glob.
+  ds: null
+
+# Сирий шар — view над Parquet: дешево створити наново на кожному прогоні.
+on-run-start:
+  - "CREATE OR REPLACE VIEW yellow_trips_raw AS SELECT * FROM read_parquet('{{ var('source_glob') }}')"
+
+models:
+  dbt_taxi:
+    +materialized: view
+    bronze:
+      +tags: ["bronze"]
+    silver:
+      +tags: ["silver"]
+    gold:
+      +materialized: table
+      +tags: ["gold"]
+
+seeds:
+  dbt_taxi:
+    +tags: ["seed"]

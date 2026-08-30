@@ -1,0 +1,10 @@
+# Профіль лежить поруч із проєктом (не в ~/.dbt), тому оператор передає і
+# --project-dir, і --profiles-dir: конфіг їде разом із кодом у git.
+dbt_taxi:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('TAXI_DB_PATH', '/opt/airflow/data/taxi_dwh.duckdb') }}"
+      schema: main
+      threads: 4

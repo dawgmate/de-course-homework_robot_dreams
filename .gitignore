@@ -11,6 +11,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Local secrets (.env.example stays tracked)
+.env
+
 .obsidian/
 .vscode/
 .DS_Store
