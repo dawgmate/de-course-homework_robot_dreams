@@ -15,6 +15,9 @@
 
 from __future__ import annotations
 
+import urllib.error
+import urllib.request
+
 from airflow.sensors.base import BaseSensorOperator
 
 
@@ -25,4 +28,14 @@ class GHArchiveSensor(BaseSensorOperator):
 
     def poke(self, context) -> bool:
         # TODO: HEAD-запит до gharchive за context["ds"] і self.hour; True, якщо 200.
-        raise NotImplementedError("Реалізуйте GHArchiveSensor.poke — див. SPEC.md")
+        ds = context["ds"]
+        url = f"https://data.gharchive.org/{ds}-{self.hour}.json.gz"
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "gh-airflow-homework/1.0"})
+        try:
+            with urllib.request.urlopen(request) as response:
+                return response.getcode() == 200
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+
+            return False
+        except Exception:
+            raise NotImplementedError("Реалізуйте GHArchiveSensor.poke — див. SPEC.md")
