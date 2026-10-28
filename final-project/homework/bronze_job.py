@@ -13,8 +13,12 @@ Spark у local mode читає NDJSON із landing і дописує рядки 
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.types import StructType
+from pyspark.sql import functions as F
+from pyspark.sql.types import StringType, StructField, StructType
 
 from common import config
 from common.spark import build_spark
@@ -22,7 +26,16 @@ from common.spark import build_spark
 # TODO (4): явна схема конверта події: event_id, event_type, ride_id, occurred_at, source, payload.
 # Підказка: `payload` — вкладений обʼєкт; якщо оголосити його як StringType, Spark віддасть
 # його текст як є, без розбору.
-EVENT_SCHEMA = StructType([])
+EVENT_SCHEMA = StructType(
+    [
+        StructField("event_id", StringType()),
+        StructField("event_type", StringType()),
+        StructField("ride_id", StringType()),
+        StructField("occurred_at", StringType()),
+        StructField("source", StringType()),
+        StructField("payload", StringType()),
+    ]
+)
 
 
 def read_landing(spark: SparkSession, landing_dir: str) -> DataFrame:
@@ -35,7 +48,24 @@ def read_landing(spark: SparkSession, landing_dir: str) -> DataFrame:
       _ingested_at (current_timestamp).
     `dt=` і `hour=` у шляху — час запису файлу, а не бізнес-колонки: колонками стати не мають.
     """
-    raise NotImplementedError("TODO (4): read_landing")
+    landing_uri = Path(landing_dir).resolve().as_uri().rstrip("/")
+    relative_source = F.regexp_replace(F.input_file_name(), f"^{re.escape(landing_uri)}/", "")
+    return (
+        spark.read.schema(EVENT_SCHEMA)
+        .option("recursiveFileLookup", "true")
+        .option("pathGlobFilter", "*.ndjson")
+        .json(landing_dir)
+        .select(
+            "event_id",
+            "event_type",
+            "ride_id",
+            F.to_timestamp("occurred_at").alias("occurred_at"),
+            "source",
+            "payload",
+            relative_source.alias("_source_file"),
+            F.current_timestamp().alias("_ingested_at"),
+        )
+    )
 
 
 def loaded_files(spark: SparkSession) -> set[str]:
@@ -50,7 +80,9 @@ def select_new(df: DataFrame, already_loaded: set[str]) -> DataFrame:
 
     TODO (5): відфільтруйте за `_source_file`. Порожній `already_loaded` — це перший запуск.
     """
-    raise NotImplementedError("TODO (5): select_new")
+    if not already_loaded:
+        return df
+    return df.filter(~F.col("_source_file").isin(sorted(already_loaded)))
 
 
 def write_bronze(df: DataFrame) -> None:
@@ -60,7 +92,16 @@ def write_bronze(df: DataFrame) -> None:
     Вимога — «або все, або нічого»: збій посеред запису не лишає в таблиці частини батча.
     Подумайте, скільки транзакцій відкриває Spark при JDBC-записі й від чого це залежить.
     """
-    raise NotImplementedError("TODO (6): write_bronze")
+    (
+        df.coalesce(1)
+        .write.mode("append")
+        .option("isolationLevel", "READ_COMMITTED")
+        .jdbc(
+            config.JDBC_URL,
+            config.BRONZE_TABLE,
+            properties=config.JDBC_PROPERTIES,
+        )
+    )
 
 
 def main() -> None:
